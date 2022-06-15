@@ -8,22 +8,6 @@ metadata:
   labels:
     app.kubernetes.io/name: cronjob-etcd-backup
 ---
-# Source: cronjob-etcd-backup/templates/PersistentVolumeClaim.yml
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: cronjob-etcd-backup
-  namespace: default
-  labels:
-    app.kubernetes.io/name: cronjob-etcd-backup
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Gi
-  storageClassName: gp2
----
 # Source: cronjob-etcd-backup/templates/ClusterRole.yml
 # NOTE: To be able to run the ETCD backup commands need to be able to sudo,
 #       hence the need for privileged.
