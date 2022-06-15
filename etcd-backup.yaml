@@ -1,0 +1,177 @@
+---
+# Source: cronjob-etcd-backup/templates/ServiceAccount.yml
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: cronjob-etcd-backup
+  namespace: default
+  labels:
+    app.kubernetes.io/name: cronjob-etcd-backup
+---
+# Source: cronjob-etcd-backup/templates/PersistentVolumeClaim.yml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cronjob-etcd-backup
+  namespace: default
+  labels:
+    app.kubernetes.io/name: cronjob-etcd-backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: gp2
+---
+# Source: cronjob-etcd-backup/templates/ClusterRole.yml
+# NOTE: To be able to run the ETCD backup commands need to be able to sudo,
+#       hence the need for privileged.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cronjob-etcd-backup
+  labels:
+    app.kubernetes.io/name: cronjob-etcd-backup
+rules:
+  - verbs:
+      - use
+    apiGroups:
+      - security.openshift.io
+    resources:
+      - securitycontextconstraints
+    resourceNames:
+      - privileged
+---
+# Source: cronjob-etcd-backup/templates/ClusterRoleBinding.yml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cronjob-etcd-backup
+  labels:
+    app.kubernetes.io/name: cronjob-etcd-backup
+subjects:
+  - kind: ServiceAccount
+    name: cronjob-etcd-backup
+    namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cronjob-etcd-backup
+---
+# secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+type: Opaque
+data:
+  aws_access_key_id: 
+  aws_secret_access_key: 
+  region: dXMtZWFzdC0x
+---
+# Source: cronjob-etcd-backup/templates/CronJob.yml
+kind: CronJob
+apiVersion: batch/v1
+metadata:
+  name: cronjob-etcd-backup
+  namespace: default
+  labels:
+    app.kubernetes.io/name: cronjob-etcd-backup
+spec:
+  schedule: "0 */5 * * *"
+  concurrencyPolicy: Forbid
+  suspend: false
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cronjob-etcd-backup
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: cronjob-etcd-backup
+        spec:
+          nodeSelector:
+            node-role.kubernetes.io/master: ''
+          restartPolicy: Never
+          activeDeadlineSeconds: 500
+          serviceAccountName: cronjob-etcd-backup
+          hostPID: true
+          hostNetwork: true
+          enableServiceLinks: true
+          schedulerName: default-scheduler
+          terminationGracePeriodSeconds: 30
+          securityContext: {}
+          containers:
+            - name: cronjob-etcd-backup
+              image: registry.redhat.io/openshift4/ose-cli
+              terminationMessagePath: /dev/termination-log
+              command:
+              - /bin/bash
+              - '-c'
+              - >-
+                echo -e '\n\n---\nCreate etcd backup local to master\n' &&
+                chroot /host /usr/local/bin/cluster-backup.sh /home/core/backup/$(date "+%F_%H%M%S") &&
+                echo -e '\n\n---\nCleanup old local etcd backups\n' &&
+                chroot /host find /home/core/backup/ -type f -mmin +"2" -delete &&
+                echo -e '\n\n---\nList all etc backups\n' &&
+                ls -al /mnt/backup/*
+              env:
+              - name: DAYS_TO_KEEP_PERSISTENT_ETCD_BACKUPS
+                value: "5"
+              securityContext:
+                privileged: true
+                runAsUser: 0
+                capabilities:
+                  add:
+                    - SYS_CHROOT
+              imagePullPolicy: Always
+              volumeMounts:
+                - name: backup
+                  mountPath: /mnt/backup
+                - name: host
+                  mountPath: /host
+              terminationMessagePolicy: File
+            - name: aws-cli
+              image: amazon/aws-cli:latest
+              command:
+              - /bin/bash
+              - '-c'
+              - >-
+                while true; do if [[  $(find /host/home/core/backup/ -type d -cmin -1 | wc -c) -ne 0 ]]; then aws s3 cp /host/home/core/backup/ s3://etcd-backup-cluster-1 --recursive; break; fi; done
+              env:
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: aws-secret
+                    key: aws_access_key_id
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: aws-secret
+                    key: aws_secret_access_key
+              - name: AWS_DEFAULT_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: aws-secret
+                    key: region
+              volumeMounts:
+                - name: backup
+                  mountPath: /mnt/backup
+                - name: host
+                  mountPath: /host
+          volumes:
+          - name: backup
+            persistentVolumeClaim:
+              claimName: cronjob-etcd-backup
+          - name: host
+            hostPath:
+              path: /
+              type: Directory
+          dnsPolicy: ClusterFirst
+          tolerations:
+          - key: node-role.kubernetes.io/master
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
