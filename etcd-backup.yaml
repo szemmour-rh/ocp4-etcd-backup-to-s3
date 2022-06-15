@@ -99,12 +99,7 @@ spec:
                 echo -e '\n\n---\nCreate etcd backup local to master\n' &&
                 chroot /host /usr/local/bin/cluster-backup.sh /home/core/backup/$(date "+%F_%H%M%S") &&
                 echo -e '\n\n---\nCleanup old local etcd backups\n' &&
-                chroot /host find /home/core/backup/ -type f -mmin +"2" -delete &&
-                echo -e '\n\n---\nList all etc backups\n' &&
-                ls -al /mnt/backup/*
-              env:
-              - name: DAYS_TO_KEEP_PERSISTENT_ETCD_BACKUPS
-                value: "5"
+                chroot /host find /home/core/backup/ -type d -mmin +"2" -delete 
               securityContext:
                 privileged: true
                 runAsUser: 0
