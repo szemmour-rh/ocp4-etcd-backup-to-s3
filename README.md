@@ -6,7 +6,7 @@
 2- Admin privilege on the cluster:  to be able to grant the pods permissions to be  executed in the control plan nodes
 
 
-## How to create the automated backup and send them to an existring S3 bucket
+## How to create the automated backup and store them to an existring S3 bucket
 
 1- Get the aws user keys and region :  aws_access_key_id  and aws_secret_access_key
 
