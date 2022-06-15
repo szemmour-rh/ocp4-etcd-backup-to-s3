@@ -142,9 +142,6 @@ spec:
                 - name: host
                   mountPath: /host
           volumes:
-          - name: backup
-            persistentVolumeClaim:
-              claimName: cronjob-etcd-backup
           - name: host
             hostPath:
               path: /
