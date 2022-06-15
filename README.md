@@ -14,6 +14,7 @@
 
 3- Include the  values in the  secret object 
 
+```
 # secrets.yaml
 apiVersion: v1
 kind: Secret
@@ -24,7 +25,7 @@ data:
   aws_access_key_id: 
   aws_secret_access_key: 
   region: 
-  
+ ```
   
 4- Apply yaml to create Openshift resources
 oc apply -f openshift4-backup.yaml
