@@ -44,15 +44,15 @@ roleRef:
   name: cronjob-etcd-backup
 ---
 # secrets.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: aws-secret
-type: Opaque
-data:
-  aws_access_key_id: 
-  aws_secret_access_key: 
-  region: dXMtZWFzdC0x
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: aws-secret
+# type: Opaque
+# data:
+#   aws_access_key_id: 
+#   aws_secret_access_key: 
+#   region: dXMtZWFzdC0x
 ---
 # Source: cronjob-etcd-backup/templates/CronJob.yml
 kind: CronJob
@@ -108,8 +108,6 @@ spec:
                     - SYS_CHROOT
               imagePullPolicy: Always
               volumeMounts:
-                - name: backup
-                  mountPath: /mnt/backup
                 - name: host
                   mountPath: /host
               terminationMessagePolicy: File
@@ -137,8 +135,6 @@ spec:
                     name: aws-secret
                     key: region
               volumeMounts:
-                - name: backup
-                  mountPath: /mnt/backup
                 - name: host
                   mountPath: /host
           volumes:
