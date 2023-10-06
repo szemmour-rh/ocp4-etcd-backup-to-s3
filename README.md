@@ -1,5 +1,10 @@
 # Automate the etcd backup creation
 
+## Introduction:
+- To create an ETCD backup in OCP 4, you must execute a script cluster-backup.sh located in the master nodes under /host, /usr/local/bin. As an admin, we would like to have a backup created automatically and not have to execute the script manually each time we want to create a backup. This is why a CronJob is needed to automate that process.
+
+- The solution provided above aims to create the ETCD backup automatically. In addition, it will automatically forward the ETCD backup to an S3 bucket outside of the cluster. Having The ETCD backup stored outside the cluster is recommended because if you lose a node or access to your nodes you still have access to the ETCD backup to restore the node.
+
 ## Pre·requisite
 1- s3 bucket:  where the backup wil be stored
 
