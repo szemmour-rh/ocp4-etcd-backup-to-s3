@@ -43,16 +43,15 @@ roleRef:
   kind: ClusterRole
   name: cronjob-etcd-backup
 ---
-# secrets.yaml
 # apiVersion: v1
 # kind: Secret
 # metadata:
-#   name: aws-secret
+#  name: aws-secret
 # type: Opaque
 # data:
-#   aws_access_key_id: 
-#   aws_secret_access_key: 
-#   region: dXMtZWFzdC0x
+#  aws_access_key_id: <to be specified | base64>
+#  aws_secret_access_key: <to be specified | base64>
+#  region: <to be specified | base64>
 ---
 # Source: cronjob-etcd-backup/templates/CronJob.yml
 kind: CronJob
