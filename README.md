@@ -31,6 +31,24 @@ data:
   aws_secret_access_key: 
   region: 
  ```
+example:
+```
+$ ID=$(echo -n `awk -F, '{ print $1 }' <USERNAME>_accessKeys.csv | tail -n 1` | base64)
+$ KEY=$(echo -n "`awk -F, '{ print $2 }' <USERNAME>_accessKeys.csv | tail -n 1 | tr -d '[:space:]'`" | base64)
+$ REGION=$(echo -n ap-south-1 | base64) ##==> Change the region accordingly.
+
+$ cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+type: Opaque
+data:
+  aws_access_key_id: $ID
+  aws_secret_access_key: $KEY
+  region: $REGION
+EOF
+```
   
 4- Apply yaml to create Openshift resources
 oc apply -f openshift4-backup.yaml
